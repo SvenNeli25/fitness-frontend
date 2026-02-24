@@ -4,7 +4,32 @@
     <v-main>
       <v-container>
         <h1 class="mb-5"><v-icon icon="mdi-dumbbell"></v-icon> Dobrodošli v gym app</h1>
-        
+        <div class="d-flex justify-space-between align-center mb-5">
+          <v-btn v-if="token" color="red" variant="outlined" @click="odjava">Odjava</v-btn>
+        </div> 
+
+        <div v-if="!token">
+          <v-card class="mx-auto pa-5" max-width="400">
+            <h2 class="text-center mb-4">{{  jePrijava ? 'Prijava' : 'Registracija' }}</h2>
+
+            <v-text-field
+              v-if="!jePrijava"
+              label="Tvoje ime"
+              v-model="avtPodatki.name"
+            ></v-text-field>
+            <v-text-field label="E-mail" v-model="avtPodatki.email" type="email"></v-text-field>
+            <v-text-field label="Geslo" v-model="avtPodatki.password" type="password"></v-text-field>
+
+            <v-btn color="primary" block class="mt-2" @click="izvediAvtentikacijo">
+              {{ jePrijava ? 'Prijavi me' : 'Ustvari račun' }}
+            </v-btn>
+
+            <v-btn variant="text" block class="mt-2" @click="jePrijava = !jePrijava">
+              {{ jePrijava ? 'Nimam računa, želim se registrirati' : 'Želim se prijaviti' }}
+            </v-btn>
+          </v-card>
+        </div>
+
         <v-card class="mb-5 pa-4">
           <h3> {{ urejamoId ? 'Uredi Vajo' : 'Dodaj Vajo' }}</h3>
           <v-row>
@@ -85,6 +110,16 @@ const novaVaja = ref({
   calories: null
 })
 
+const token = ref(localStorage.getItem('token') || '')
+
+const jePrijava = ref(true)
+
+const avtPodatki = ref({
+  name: '',
+  email: '',
+  password: ''
+})
+
 async function shraniVajo() {
 
   if(!novaVaja.value.name || !novaVaja.value.reps || !novaVaja.value.calories){
@@ -105,10 +140,16 @@ async function shraniVajo() {
       response = await fetch(`http://127.0.0.1:8000/api/workouts/${urejamoId.value}`, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' +  token.value
+          
         },
         body: JSON.stringify(podatki)
       })
+
+      if(!response.ok) throw new Error('Napaka pri posodabljanju vaje')
+
       const posodobljenaVaja = await response.json()
       const index = workouts.value.findIndex(vaja => vaja.id === urejamoId.value)
       if (index !== -1) {
@@ -118,7 +159,10 @@ async function shraniVajo() {
       response = await fetch('http://127.0.0.1:8000/api/workouts', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer ' +  token.value
+          
         },
         body: JSON.stringify(podatki)
       })
@@ -134,7 +178,10 @@ async function shraniVajo() {
 async function izbrisiVajo(id) {
   try{
     await fetch(`http://127.0.0.1:8000/api/workouts/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: {
+        'Authorization': 'Bearer ' +  token.value,
+      }
     })
     workouts.value = workouts.value.filter(vaja => vaja.id != id)
 }catch (error) {
@@ -160,14 +207,82 @@ function preklicUrejanja(){
   urejamoId.value = null
 }
 
-onMounted(async () => {
+async function pridobiVaje(){
+
+  if(!token.value) return;
+
   try{
-    const respond = await fetch('http://127.0.0.1:8000/api/workouts')
-    const data = await respond.json()
+    const response = await fetch('http://127.0.0.1:8000/api/workouts', {
+      headers: {
+        'Authorization': 'Bearer ' +  token.value,
+        'Accept': 'application/json'
+      }
+    })
+    const data = await response.json()
     workouts.value = data
-    console.log("podatki so tu: ", data)
-  } catch (error) {
-    console.error("napaka pri pridobivanju podatkov: ", error)
+    console.log("pridobljene vaje: ", data)
+  }catch (error) {
+    console.error("napaka pri pridobivanju vaj: ", error)
   }
+   
+  
+}
+
+
+async function izvediAvtentikacijo() 
+{
+  const url = jePrijava.value
+    ? 'http://127.0.0.1:8000/api/login'
+    : 'http://127.0.0.1:8000/api/register'
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify(avtPodatki.value)
+    })
+
+    const data = await response.json()
+
+    if(!response.ok) {
+      alert(data.message || 'Napaka pri avtentikaciji')
+      return
+    }
+
+    localStorage.setItem('token', data.token)
+    token.value = data.token
+    pridobiVaje()
+    avtPodatki.value = {
+      name: '',
+      email: '',
+      password: ''
+    }
+  } catch (error) {
+    console.error("Napaka pri avtentikaciji: ", error)
+  }
+}
+
+async function odjava() {
+  try {
+    await fetch('http://127.0.0.1:8000/api/logout', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token.value}`,
+        'Content-Type': 'application/json'
+      }
+    })
+  } catch (error) {
+    console.error("Napaka pri odjavi: ", error)
+  } 
+
+  localStorage.removeItem('token')
+  token.value = ''
+  workouts.value = []
+}
+onMounted(() => {
+  pridobiVaje()
 })
 </script>
