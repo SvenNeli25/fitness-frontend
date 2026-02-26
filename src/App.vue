@@ -1,7 +1,11 @@
 <template>
   <v-app>
     <v-app-bar color="blue-darken-3" elevation="2" v-if="jePrijavljen">
-      <v-toolbar-title>🏋️‍♂️ Gym App</v-toolbar-title>
+      <v-toolbar-title class="font-weight-bold">🏋️‍♂️ Gym App</v-toolbar-title>
+      
+      <v-btn to="/" variant="text" class="ml-4">Knjižnica vaj</v-btn>
+      <v-btn to="/routines" variant="text">Moje Rutine</v-btn>
+
       <v-spacer></v-spacer>
       <v-btn color="white" variant="outlined" @click="odjava">Odjava</v-btn>
     </v-app-bar>
