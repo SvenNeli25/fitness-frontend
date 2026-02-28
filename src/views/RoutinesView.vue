@@ -91,14 +91,40 @@
 
     <v-row v-if="!nalagam">
       <v-col v-for="rutina in rutine" :key="rutina.id" cols="12" md="4">
-        <v-card elevation="2" class="h-100 border-top-blue">
-          <v-card-title class="font-weight-bold">{{ rutina.name }}</v-card-title>
-          <v-card-text>
-            <p class="text-grey">Ustvarjeno: {{ new Date(rutina.created_at).toLocaleDateString() }}</p>
+       <v-card elevation="2" class="h-100 border-top-blue d-flex flex-column">
+          
+          <v-card-title class="d-flex justify-space-between align-center">
+            <span class="font-weight-bold">{{ rutina.name }}</span>
+            <v-btn icon="mdi-delete" variant="text" color="red" size="small" @click="izbrisiRutino(rutina.id)"></v-btn>
+          </v-card-title>
+          
+          <v-card-text class="flex-grow-1">
+            <p class="text-grey mb-3 text-caption">Ustvarjeno: {{ new Date(rutina.created_at).toLocaleDateString() }}</p>
+            
+            <div v-if="rutina.routine_exercises && rutina.routine_exercises.length > 0">
+              <p class="text-subtitle-2 mb-1">Vaje v rutini:</p>
+              <v-chip 
+                v-for="re in rutina.routine_exercises" 
+                :key="re.id" 
+                size="small" 
+                variant="tonal" 
+                color="blue-darken-3" 
+                class="mr-1 mb-1"
+              >
+                {{ re.exercise.name }} ({{ re.sets.length }} set)
+              </v-chip>
+            </div>
+            <div v-else class="text-grey text-caption">
+              Ta rutina nima vaj.
+            </div>
           </v-card-text>
-          <v-card-actions>
-            <v-btn color="blue-darken-3" variant="flat" block>Začni trening</v-btn>
+
+          <v-card-actions class="pa-4 pt-0">
+            <v-btn color="blue-darken-3" variant="flat" block @click="zacniTrening(rutina.id)">
+              Začni trening
+            </v-btn>
           </v-card-actions>
+          
         </v-card>
       </v-col>
     </v-row>
@@ -107,7 +133,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const rutine = ref([])
 const vseVaje = ref([])
 const nalagam = ref(true)
@@ -149,7 +177,7 @@ function dodajVajoVRutino(exerciseId) {
   
   const vaja = vseVaje.value.find(v => v.id === exerciseId)
   
-  // Zapišemo tudi tip vaje (Uteži, Kardio...), da vemo, kaj prikazati na zaslonu!
+  // Zapišem tudi tip vaje (Uteži, Kardio...), da vem, kaj prikazati na zaslonu!
   novaRutina.value.exercises.push({
     exercise_id: vaja.id,
     name: vaja.name,
@@ -182,8 +210,8 @@ async function shraniRutino() {
 
   shranjujem.value = true
 
-  // MAGIČNI KORAK: Očistimo podatke!
-  // Preprečimo prazne stringe (""), ki sesujejo bazo, in jih spremenimo v prave številke ali null
+  
+ 
   const ocisceniPodatki = JSON.parse(JSON.stringify(novaRutina.value))
   ocisceniPodatki.exercises.forEach(vaja => {
     vaja.sets.forEach(set => {
@@ -198,7 +226,7 @@ async function shraniRutino() {
     const response = await fetch('http://127.0.0.1:8000/api/routines', {
       method: 'POST',
       headers: headers,
-      body: JSON.stringify(ocisceniPodatki) // Pošljemo očiščene podatke
+      body: JSON.stringify(ocisceniPodatki) // Pošlje očiščene podatke
     })
 
     if (response.ok) {
@@ -220,6 +248,33 @@ function zapriDialog() {
   dialog.value = false
   novaRutina.value = { name: '', exercises: [] }
 }
+
+//BRISANJE RUTINE
+async function izbrisiRutino(id) {
+  if (!confirm("Si prepričan, da želiš izbrisati to rutino?")) return;
+
+  try {
+    const response = await fetch(`http://127.0.0.1:8000/api/routines/${id}`, {
+      method: 'DELETE',
+      headers: headers
+    })
+
+    if (response.ok) {
+      await naloziPodatke() 
+    } else {
+      alert("Napaka pri brisanju.")
+    }
+  } catch (error) {
+    console.error(error)
+  }
+}
+
+
+function zacniTrening(rutinaId) {
+  alert("Pripravljam se na trening! ID rutine: " + rutinaId);
+  
+}
+
 
 onMounted(() => {
   naloziPodatke()
