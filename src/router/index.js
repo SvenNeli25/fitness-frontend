@@ -3,6 +3,8 @@ import DashboardView from '../views/DashboardView.vue'
 import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import RoutinesView from '../views/RoutinesView.vue'
+import WorkoutView from '../views/WorkoutView.vue'
+import HistoryView from '../views/HistoryView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -30,6 +32,18 @@ const router = createRouter({
       name: 'register',
       component: RegisterView,
       meta: { requiresGuest: true },
+    },
+    {
+      path: '/workout/:id',
+      name: 'workout',
+      component: WorkoutView,
+      meta: { requiresAuth: true },
+    },
+    {
+      path: '/history',
+      name: 'history',
+      component: HistoryView,
+      meta: { requiresAuth: true }
     }
 
 

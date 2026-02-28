@@ -249,6 +249,11 @@ function zapriDialog() {
   novaRutina.value = { name: '', exercises: [] }
 }
 
+//Trening
+function zacniTrening(rutinaOd){
+  router.push({ name: 'workout', params: { id: rutinaOd } })
+}
+
 //BRISANJE RUTINE
 async function izbrisiRutino(id) {
   if (!confirm("Si prepričan, da želiš izbrisati to rutino?")) return;
@@ -270,10 +275,7 @@ async function izbrisiRutino(id) {
 }
 
 
-function zacniTrening(rutinaId) {
-  alert("Pripravljam se na trening! ID rutine: " + rutinaId);
-  
-}
+
 
 
 onMounted(() => {
